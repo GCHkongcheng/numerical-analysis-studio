@@ -11,8 +11,16 @@
     "types": ["node"]
   },
   "include": [
+    "src/lib/approximation-core.ts",
+    "src/lib/integration-core.ts",
     "src/lib/matrix-core.ts",
+    "src/lib/nonlinear-core.ts",
+    "src/lib/ode-core.ts",
+    "src/types/approximation.ts",
+    "src/types/integration.ts",
     "src/types/matrix.ts",
+    "src/types/nonlinear.ts",
+    "src/types/ode.ts",
     "scripts/test-math.ts"
   ]
 }

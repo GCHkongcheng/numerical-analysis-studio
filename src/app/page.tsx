@@ -4,10 +4,13 @@ import {
   AlertTriangle,
   Braces,
   Calculator,
+  ChartArea,
   CircleHelp,
   FunctionSquare,
+  LineChart,
   Menu,
   Redo2,
+  Sigma,
   SplitSquareVertical,
   Undo2,
   X,
@@ -22,6 +25,10 @@ import { OperationButtonGroup } from "@/components/matrix/OperationButtonGroup";
 import { ToastHost, type ToastItem } from "@/components/matrix/ToastHost";
 import { SaveToLibraryButton } from "@/components/matrix/SaveToLibraryButton";
 import { StepCard } from "@/components/matrix/StepCard";
+import { ApproximationPanel } from "@/components/approximation/ApproximationPanel";
+import { IntegrationPanel } from "@/components/integration/IntegrationPanel";
+import { NonlinearSolverPanel } from "@/components/nonlinear/NonlinearSolverPanel";
+import { OdePanel } from "@/components/ode/OdePanel";
 import { useMatrix, type MatrixHistorySnapshot } from "@/hooks/useMatrix";
 import {
   analyzeConditionNumbers,
@@ -75,6 +82,10 @@ type TabId =
   | "determinant"
   | "decomposition"
   | "eigen"
+  | "nonlinear"
+  | "approximation"
+  | "integration"
+  | "ode"
   | "errorAnalysis";
 type DecompositionMode = "lu" | "luPlain" | "qr" | "cholesky" | "svd";
 
@@ -539,6 +550,10 @@ export default function Home() {
       { id: "system", label: "线性方程组", icon: Braces },
       { id: "decomposition", label: "矩阵分解", icon: SplitSquareVertical },
       { id: "eigen", label: "特征分析", icon: FunctionSquare },
+      { id: "nonlinear", label: "非线性求根", icon: Sigma },
+      { id: "approximation", label: "插值与逼近", icon: LineChart },
+      { id: "integration", label: "数值积分", icon: ChartArea },
+      { id: "ode", label: "微分方程", icon: FunctionSquare },
       { id: "errorAnalysis", label: "误差分析", icon: AlertTriangle },
     ],
     []
@@ -1486,10 +1501,10 @@ export default function Home() {
           </Link>
         </div>
         <h1 className="text-4xl font-semibold leading-tight text-slate-900 md:text-5xl">
-          线性代数工作台
+          数值分析工作台
         </h1>
         <p className="max-w-3xl text-base text-slate-700">
-          支持矩阵运算、线性方程组、矩阵分解与特征分析，并提供正确性校验。
+          支持线性代数计算、非线性方程求根、插值逼近、数值积分、微分方程、迭代过程追踪与正确性校验。
         </p>
       </header>
 
@@ -1544,30 +1559,41 @@ export default function Home() {
             enabled={showCorrectnessPanel}
             onToggle={setShowCorrectnessPanel}
           />
-          <div className="rounded-2xl border border-slate-200 bg-white p-3">
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                当前输入
+          {activeTab !== "nonlinear" &&
+          activeTab !== "approximation" &&
+          activeTab !== "integration" &&
+          activeTab !== "ode" ? (
+            <>
+              <div className="rounded-2xl border border-slate-200 bg-white p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                    当前输入
+                  </div>
+                  <SaveToLibraryButton
+                    defaultName={suggestNameForContext(matrixInventory, activeLibraryContext)}
+                    onSave={handleSaveCurrentInputToLibrary}
+                  />
+                </div>
+                <div className="mt-2 text-[11px] text-slate-500">
+                  {activeLibraryContext === "matrix-operations"
+                    ? `当前活动输入位：${activeOperationTarget}`
+                    : "可将当前编辑矩阵保存到矩阵库。"}
+                </div>
               </div>
-              <SaveToLibraryButton
-                defaultName={suggestNameForContext(matrixInventory, activeLibraryContext)}
-                onSave={handleSaveCurrentInputToLibrary}
+              <MatrixShelf
+                items={matrixInventory}
+                activeMatrixId={activeMatrixId}
+                onActivate={handleActivateInventoryMatrix}
+                onDelete={deleteInventoryMatrix}
+                onRename={renameInventoryMatrix}
+                onSmartImport={handleSmartImportMatrix}
               />
+            </>
+          ) : (
+            <div className="rounded-2xl border border-slate-200 bg-white p-3 text-xs text-slate-500">
+              当前模块使用函数表达式或数据点，矩阵库会在切回线性代数模块后继续可用。
             </div>
-            <div className="mt-2 text-[11px] text-slate-500">
-              {activeLibraryContext === "matrix-operations"
-                ? `当前活动输入位：${activeOperationTarget}`
-                : "可将当前编辑矩阵保存到矩阵库。"}
-            </div>
-          </div>
-          <MatrixShelf
-            items={matrixInventory}
-            activeMatrixId={activeMatrixId}
-            onActivate={handleActivateInventoryMatrix}
-            onDelete={deleteInventoryMatrix}
-            onRename={renameInventoryMatrix}
-            onSmartImport={handleSmartImportMatrix}
-          />
+          )}
           <HistoryControlCard
             canUndo={historyState.canUndo}
             canRedo={historyState.canRedo}
@@ -2314,6 +2340,14 @@ export default function Home() {
               </div>
             </div>
           )}
+
+          {activeTab === "nonlinear" && <NonlinearSolverPanel />}
+
+          {activeTab === "approximation" && <ApproximationPanel />}
+
+          {activeTab === "integration" && <IntegrationPanel />}
+
+          {activeTab === "ode" && <OdePanel />}
 
           {activeTab === "errorAnalysis" && (
             <div className="workspace-container">

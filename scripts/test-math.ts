@@ -25,6 +25,16 @@ import {
   solveLinearSystemWithSteps,
   solveNumericLinearSystem,
 } from "../src/lib/matrix-core";
+import {
+  chebyshevZeros,
+  evaluatePolynomial,
+  solveApproximation,
+  solveFunctionExperiment,
+  uniformNodes,
+} from "../src/lib/approximation-core";
+import { solveIntegration } from "../src/lib/integration-core";
+import { solveRoot } from "../src/lib/nonlinear-core";
+import { solveOde } from "../src/lib/ode-core";
 import type { EigenComponent } from "../src/types/matrix";
 
 type Complex = {
@@ -492,6 +502,270 @@ function testRootFormattingBehavior() {
   const decimalRoot = formatValue("sqrt(2)", "decimal");
   assert.ok(decimalRoot !== "√(2)", "decimal 模式下应给出近似数值");
 }
+
+function testNonlinearRootSolvers() {
+  const fExpression = "x^3 - x - 1";
+
+  const newton = solveRoot({
+    method: "newton",
+    fExpression,
+    x0: 1,
+    tolerance: 1e-10,
+    maxIterations: 30,
+  });
+  assert.ok(newton.converged, "Newton should converge for the sample equation");
+  assert.ok(newton.root !== null, "Newton should return a root");
+  assert.ok(Math.abs(newton.root - 1.3247179572) < 1e-8, "Newton root should match the plastic constant");
+
+  const damped = solveRoot({
+    method: "dampedNewton",
+    fExpression,
+    x0: 0,
+    tolerance: 1e-10,
+    maxIterations: 50,
+  });
+  assert.ok(damped.history.some((item) => item.lambda !== undefined), "Damped Newton should record step lengths");
+
+  const fixedPoint = solveRoot({
+    method: "fixedPoint",
+    fExpression,
+    gExpression: "(x + 1)^(1/3)",
+    x0: 1,
+    tolerance: 1e-10,
+    maxIterations: 80,
+  });
+  assert.ok(fixedPoint.converged, "Fixed-point iteration should converge for the provided g(x)");
+
+  const steffensen = solveRoot({
+    method: "steffensen",
+    fExpression,
+    gExpression: "(x + 1)^(1/3)",
+    x0: 1,
+    tolerance: 1e-10,
+    maxIterations: 20,
+  });
+  assert.ok(steffensen.converged, "Steffensen iteration should converge for the provided g(x)");
+
+  const bisection = solveRoot({
+    method: "bisection",
+    fExpression,
+    intervalStart: 1,
+    intervalEnd: 2,
+    tolerance: 1e-10,
+    maxIterations: 80,
+  });
+  assert.ok(bisection.converged, "Bisection should converge on a sign-changing interval");
+
+  const secant = solveRoot({
+    method: "secant",
+    fExpression,
+    x0: 1,
+    x1: 2,
+    tolerance: 1e-10,
+    maxIterations: 40,
+  });
+  assert.ok(secant.converged, "Secant should converge for the sample equation");
+}
+
+function testInterpolationAndApproximation() {
+  const quadraticPoints = [
+    { x: 0, y: 1 },
+    { x: 1, y: 2 },
+    { x: 2, y: 5 },
+    { x: 3, y: 10 },
+  ];
+
+  const lagrange = solveApproximation({
+    method: "lagrange",
+    points: quadraticPoints,
+    queryX: [1.5],
+  });
+  assert.ok(lagrange.powerCoefficients, "Lagrange should return power coefficients");
+  assert.ok(Math.abs((lagrange.query[0].y ?? 0) - 3.25) < 1e-10, "Lagrange query should match x^2+1");
+  assert.ok(lagrange.metrics.rmse < 1e-10, "Lagrange interpolation should pass through nodes");
+
+  const newton = solveApproximation({
+    method: "newton",
+    points: quadraticPoints,
+    queryX: [2.5],
+  });
+  assert.ok(newton.dividedDifferenceTable, "Newton should return a divided-difference table");
+  assert.ok(Math.abs((newton.query[0].y ?? 0) - 7.25) < 1e-10, "Newton query should match x^2+1");
+
+  const piecewise = solveApproximation({
+    method: "piecewiseLinear",
+    points: quadraticPoints,
+    queryX: [1.5, 4],
+  });
+  assert.ok(Math.abs((piecewise.query[0].y ?? 0) - 3.5) < 1e-10, "Piecewise linear interpolation should interpolate inside interval");
+  assert.equal(piecewise.query[1].y, null, "Piecewise linear interpolation should not extrapolate");
+
+  const leastSquares = solveApproximation({
+    method: "leastSquaresPolynomial",
+    points: [
+      { x: 0, y: 1 },
+      { x: 1, y: 3 },
+      { x: 2, y: 5 },
+      { x: 3, y: 7 },
+    ],
+    degree: 1,
+    queryX: [4],
+  });
+  assert.ok(leastSquares.powerCoefficients, "Least squares should return coefficients");
+  assert.ok(Math.abs(evaluatePolynomial(leastSquares.powerCoefficients ?? [], 4) - 9) < 1e-10, "Least-squares line should extrapolate y=2x+1");
+  assert.ok((leastSquares.metrics.r2 ?? 0) > 0.999999, "Least-squares fit should report strong R2");
+
+  const hermite = solveApproximation({
+    method: "hermite",
+    points: [
+      { x: 0, y: 0, derivative: 0 },
+      { x: 1, y: 1, derivative: 2 },
+      { x: 2, y: 4, derivative: 4 },
+    ],
+    queryX: [1.5],
+  });
+  assert.ok(hermite.powerCoefficients, "Hermite should return power coefficients");
+  assert.ok(Math.abs((hermite.query[0].y ?? 0) - 2.25) < 1e-10, "Hermite interpolation should honor derivative data for x^2");
+
+  const spline = solveApproximation({
+    method: "cubicSpline",
+    points: [
+      { x: 0, y: 0 },
+      { x: 1, y: 1 },
+      { x: 2, y: 0 },
+    ],
+    queryX: [1],
+  });
+  assert.equal(spline.splineSegments?.length, 2, "Natural cubic spline should return one segment per interval");
+  assert.ok(Math.abs((spline.query[0].y ?? 0) - 1) < 1e-10, "Spline should pass through interpolation nodes");
+}
+
+function testFunctionApproximationExperiments() {
+  const uniform = uniformNodes(4, -1, 1);
+  assert.deepEqual(uniform, [-1, -0.5, 0, 0.5, 1], "Uniform node generation should include both endpoints");
+
+  const chebyshev = chebyshevZeros(5, -1, 1);
+  assert.equal(chebyshev.length, 5, "Chebyshev node generation should return requested count");
+  assert.ok(chebyshev[0] < chebyshev[4], "Chebyshev nodes should be sorted");
+
+  const least = solveFunctionExperiment({
+    kind: "continuousLeastSquares",
+    functionExpression: "x^2 + 1",
+    intervalStart: -1,
+    intervalEnd: 1,
+    degree: 2,
+    sampleCount: 180,
+  });
+  assert.ok(least.coefficients, "Continuous least-squares should return coefficients");
+  assert.ok((least.metrics[0]?.maxError ?? 1) < 1e-8, "Quadratic continuous least-squares should recover x^2+1");
+
+  const remez = solveFunctionExperiment({
+    kind: "remez",
+    functionExpression: "x^2 + 1",
+    intervalStart: -1,
+    intervalEnd: 1,
+    degree: 2,
+    sampleCount: 180,
+  });
+  assert.ok(remez.exchangePoints?.length === 4, "Degree-2 Remez should track four exchange points");
+  assert.ok((remez.metrics[0]?.maxError ?? 1) < 1e-7, "Remez should recover a quadratic exactly");
+
+  const compare = solveFunctionExperiment({
+    kind: "chebyshevCompare",
+    functionExpression: "1 / (1 + 25 * x^2)",
+    intervalStart: -1,
+    intervalEnd: 1,
+    sampleCount: 180,
+  });
+  assert.equal(compare.metrics.length, 3, "Chebyshev comparison should produce three metric rows");
+  assert.equal(compare.series.length, 4, "Chebyshev comparison should include original function and three approximations");
+}
+
+function testNumericalIntegration() {
+  const trapezoid = solveIntegration({
+    method: "trapezoid",
+    expression: "x",
+    intervalStart: 0,
+    intervalEnd: 1,
+    subdivisions: 20,
+  });
+  assert.ok(Math.abs(trapezoid.value - 0.5) < 1e-12, "Composite trapezoid should integrate linear functions exactly");
+
+  const simpson = solveIntegration({
+    method: "simpson",
+    expression: "x^3",
+    intervalStart: 0,
+    intervalEnd: 1,
+    subdivisions: 10,
+  });
+  assert.ok(Math.abs(simpson.value - 0.25) < 1e-12, "Composite Simpson should integrate cubic functions exactly");
+
+  const romberg = solveIntegration({
+    method: "romberg",
+    expression: "sin(x)",
+    intervalStart: 0,
+    intervalEnd: Math.PI,
+    rombergLevels: 6,
+  });
+  assert.ok(Math.abs(romberg.value - 2) < 1e-10, "Romberg should accurately integrate sin on [0, pi]");
+  assert.ok(romberg.table?.length === 6, "Romberg should expose convergence table");
+
+  const gauss = solveIntegration({
+    method: "gaussLegendre",
+    expression: "x^5 + x^2",
+    intervalStart: -1,
+    intervalEnd: 1,
+    gaussPoints: 4,
+  });
+  assert.ok(Math.abs(gauss.value - 2 / 3) < 1e-12, "Gauss-Legendre should integrate low-degree polynomials exactly");
+}
+
+function testOdeSolvers() {
+  const rk4 = solveOde({
+    method: "rk4",
+    expression: "y - x^2 + 1",
+    exactExpression: "(x + 1)^2 - 0.5 * exp(x)",
+    x0: 0,
+    y0: 0.5,
+    xEnd: 2,
+    stepSize: 0.2,
+  });
+  assert.ok((rk4.maxError ?? 1) < 2e-4, "RK4 should be accurate on the sample initial value problem");
+
+  const euler = solveOde({
+    method: "euler",
+    expression: "y",
+    exactExpression: "exp(x)",
+    x0: 0,
+    y0: 1,
+    xEnd: 1,
+    stepSize: 0.1,
+  });
+  assert.ok((euler.maxError ?? 0) > 0.01, "Euler should expose visible first-order error on exp(x)");
+
+  const shortened = solveOde({
+    method: "midpoint",
+    expression: "x + y",
+    x0: 0,
+    y0: 1,
+    xEnd: 1,
+    stepSize: 0.3,
+  });
+  assert.ok(shortened.message, "Solver should report shortened final step");
+  assert.ok(Math.abs(shortened.steps[shortened.steps.length - 1].x - 1) < 1e-12, "Solver should land exactly on endpoint");
+
+  const backward = solveOde({
+    method: "rk4",
+    expression: "y",
+    exactExpression: "exp(x)",
+    x0: 1,
+    y0: Math.E,
+    xEnd: 0,
+    stepSize: 0.1,
+  });
+  assert.ok(Math.abs(backward.steps[backward.steps.length - 1].y - 1) < 1e-6, "Solver should support backward integration");
+}
+
 function testSolveNumericLinearSystemAndEigenRelativeError() {
   const matrix = [
     [4, 1],
@@ -538,6 +812,11 @@ function run() {
   testPerturbationAndRelativeErrors();
   testSolveNumericLinearSystemAndEigenRelativeError();
   testRootFormattingBehavior();
+  testNonlinearRootSolvers();
+  testInterpolationAndApproximation();
+  testFunctionApproximationExperiments();
+  testNumericalIntegration();
+  testOdeSolvers();
 
   console.log("[test:math] 所有回归测试通过");
 }
