@@ -39,6 +39,8 @@ type SymbolKey = {
 
 type MathInputContextValue = {
   hasTarget: boolean;
+  isMobileKeyboardMode: boolean;
+  keyboardOpenRequest: number;
   targetLabel: string;
   focusTarget: () => void;
   pressKey: (key: SymbolKey) => void;
@@ -46,6 +48,7 @@ type MathInputContextValue = {
 };
 
 const MathInputContext = createContext<MathInputContextValue | null>(null);
+const MOBILE_KEYBOARD_QUERY = "(hover: none) and (pointer: coarse), (max-width: 768px)";
 
 const GROUPS: Array<{ id: SymbolGroup; label: string }> = [
   { id: "numbers", label: "123" },
@@ -296,6 +299,37 @@ function isMathInputElement(target: EventTarget | null): target is MathInputElem
   );
 }
 
+function applyMobileInputMode(element: MathInputElement, enabled: boolean) {
+  if (enabled) {
+    if (!element.dataset.previousInputMode) {
+      element.dataset.previousInputMode = element.getAttribute("inputmode") ?? "";
+    }
+    element.setAttribute("inputmode", "none");
+    element.autocomplete = "off";
+    element.spellcheck = false;
+    return;
+  }
+
+  if (!("previousInputMode" in element.dataset)) return;
+  const previous = element.dataset.previousInputMode;
+  if (previous) {
+    element.setAttribute("inputmode", previous);
+  } else {
+    element.removeAttribute("inputmode");
+  }
+  delete element.dataset.previousInputMode;
+}
+
+function applyMobileInputModeToPage(enabled: boolean) {
+  document
+    .querySelectorAll<HTMLInputElement | HTMLTextAreaElement>(
+      ".studio-input, .matrix-input, [data-math-input='true']"
+    )
+    .forEach((element) => {
+      if (isMathInputElement(element)) applyMobileInputMode(element, enabled);
+    });
+}
+
 function inferInputKind(element: MathInputElement): MathInputKind {
   if (element.classList.contains("matrix-input")) return "matrix";
   if (element.tagName === "TEXTAREA") return "text";
@@ -421,6 +455,8 @@ function runKeyAction(element: MathInputElement, key: SymbolKey) {
 
 export function MathInputProvider({ children }: { children: ReactNode }) {
   const [target, setTarget] = useState<MathInputTarget | null>(null);
+  const [isMobileKeyboardMode, setIsMobileKeyboardMode] = useState(false);
+  const [keyboardOpenRequest, setKeyboardOpenRequest] = useState(0);
   const targetRef = useRef<MathInputTarget | null>(null);
 
   const registerTarget = useCallback((nextTarget: MathInputTarget) => {
@@ -435,19 +471,49 @@ export function MathInputProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const mobileQuery = window.matchMedia(MOBILE_KEYBOARD_QUERY);
+    const syncMobileMode = () => {
+      setIsMobileKeyboardMode(mobileQuery.matches);
+      applyMobileInputModeToPage(mobileQuery.matches);
+    };
+
+    syncMobileMode();
+    mobileQuery.addEventListener("change", syncMobileMode);
+
+    const observer = new MutationObserver(() => {
+      applyMobileInputModeToPage(mobileQuery.matches);
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!mobileQuery.matches || !isMathInputElement(event.target)) return;
+      applyMobileInputMode(event.target, true);
+    };
+
     const handleFocusIn = (event: FocusEvent) => {
       if (!isMathInputElement(event.target)) return;
 
       const element = event.target;
+      applyMobileInputMode(element, mobileQuery.matches);
       registerTarget({
         id: element.id || element.name || element.getAttribute("aria-label") || `math-input-${Date.now()}`,
         kind: inferInputKind(element),
         element,
       });
+      if (mobileQuery.matches) {
+        setKeyboardOpenRequest((current) => current + 1);
+      }
     };
 
+    document.addEventListener("pointerdown", handlePointerDown, true);
     document.addEventListener("focusin", handleFocusIn);
-    return () => document.removeEventListener("focusin", handleFocusIn);
+    return () => {
+      observer.disconnect();
+      mobileQuery.removeEventListener("change", syncMobileMode);
+      document.removeEventListener("pointerdown", handlePointerDown, true);
+      document.removeEventListener("focusin", handleFocusIn);
+      applyMobileInputModeToPage(false);
+    };
   }, [registerTarget]);
 
   const pressKey = useCallback((key: SymbolKey) => {
@@ -463,12 +529,14 @@ export function MathInputProvider({ children }: { children: ReactNode }) {
         : null;
     return {
       hasTarget: Boolean(validTarget),
+      isMobileKeyboardMode,
+      keyboardOpenRequest,
       targetLabel: validTarget ? getElementLabel(validTarget.element, validTarget.kind) : "先选择输入框",
       focusTarget,
       pressKey,
       registerTarget,
     };
-  }, [focusTarget, pressKey, registerTarget, target]);
+  }, [focusTarget, isMobileKeyboardMode, keyboardOpenRequest, pressKey, registerTarget, target]);
 
   return <MathInputContext.Provider value={value}>{children}</MathInputContext.Provider>;
 }
@@ -509,6 +577,25 @@ export function SymbolKeyboard() {
   const context = useContext(MathInputContext);
   const [isOpen, setIsOpen] = useState(false);
   const [activeGroup, setActiveGroup] = useState<SymbolGroup>("numbers");
+  const hasTarget = context?.hasTarget ?? false;
+  const isMobileKeyboardMode = context?.isMobileKeyboardMode ?? false;
+  const keyboardOpenRequest = context?.keyboardOpenRequest ?? 0;
+  const focusTarget = context?.focusTarget;
+
+  useEffect(() => {
+    if (!isMobileKeyboardMode || !hasTarget) return undefined;
+
+    const frame = window.requestAnimationFrame(() => {
+      setIsOpen(true);
+      focusTarget?.();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [focusTarget, hasTarget, isMobileKeyboardMode, keyboardOpenRequest]);
+
+  useEffect(() => {
+    document.body.classList.toggle("symbol-keyboard-open", isOpen);
+    return () => document.body.classList.remove("symbol-keyboard-open");
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -520,8 +607,6 @@ export function SymbolKeyboard() {
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
   }, [isOpen]);
-
-  const hasTarget = context?.hasTarget ?? false;
 
   return (
     <>

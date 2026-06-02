@@ -532,6 +532,10 @@ body {
   transform: translateY(-1px);
 }
 
+body.symbol-keyboard-open {
+  padding-bottom: min(22rem, 46vh);
+}
+
 .symbol-keyboard-backdrop {
   display: none;
   pointer-events: none;
@@ -708,6 +712,5 @@ body {
     font-size: 1rem;
   }
 }
-
 
 

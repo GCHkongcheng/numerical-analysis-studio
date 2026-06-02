@@ -61,3 +61,16 @@ test("symbol keyboard keeps focus while moving the caret and deleting", async ({
   await expect(firstCell).toHaveValue("13");
   await expect(firstCell).toBeFocused();
 });
+
+test("mobile math inputs use the custom keyboard instead of a virtual keyboard hint", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 740 });
+  await page.goto("/");
+
+  const firstCell = page.locator(".matrix-input").first();
+  await firstCell.click();
+
+  await expect(firstCell).toHaveAttribute("inputmode", "none");
+  await expect(page.locator(".symbol-keyboard-panel")).toBeVisible();
+  await expect(page.locator("body")).toHaveClass(/symbol-keyboard-open/);
+  await expect(firstCell).toBeFocused();
+});
