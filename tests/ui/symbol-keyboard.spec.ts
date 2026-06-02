@@ -72,6 +72,7 @@ test("mobile math inputs use the custom keyboard instead of a virtual keyboard h
   await expect(firstCell).toHaveAttribute("inputmode", "none");
   await expect(firstCell).toHaveCSS("font-size", "16px");
   await expect(page.locator(".symbol-keyboard-panel")).toBeVisible();
+  await expect(page.locator(".symbol-keyboard-fab")).toHaveCSS("display", "none");
   await expect(page.locator("body")).toHaveClass(/symbol-keyboard-open/);
   await expect(firstCell).toBeFocused();
 });

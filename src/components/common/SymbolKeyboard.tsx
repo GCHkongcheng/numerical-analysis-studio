@@ -617,7 +617,7 @@ export function SymbolKeyboard() {
       <button
         type="button"
         className="symbol-keyboard-fab"
-        style={fabStyle}
+        style={isOpen && isMobileKeyboardMode ? { ...fabStyle, display: "none" } : fabStyle}
         aria-label={isOpen ? "收起符号键盘" : "打开符号键盘"}
         title={isOpen ? "收起符号键盘" : "打开符号键盘"}
         onMouseDown={(event) => event.preventDefault()}
