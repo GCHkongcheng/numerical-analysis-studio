@@ -151,8 +151,9 @@ npm run dev
 npm run setup:hooks
 ```
 
-- 默认行为：每次 `git commit` 会优先调用 `codex exec` 对已暂存改动做审查并更新 `CHANGELOG.md`，然后自动 `git add CHANGELOG.md`。
-- 回退行为：若本机不可用 Codex 或执行失败，会回退到本地规则审查，保证提交不中断。
+- 默认行为：每次 `git commit` 会优先调用 `codex exec` 基于已暂存改动更新 `CHANGELOG.md` 的公开发布说明。
+- 回退行为：若本机不可用 Codex 或执行失败，会回退到本地规则，在 `Added / Changed / Fixed / Removed` 中生成一条简洁变更说明。
+- 手动优先：如果本次提交已经修改了 `CHANGELOG.md`，Hook 会跳过自动更新，避免重复写入。
 - 强制使用 Codex：设置环境变量 `CHANGELOG_REQUIRE_CODEX=1`，Codex 失败时会直接阻止提交。
 - 自定义 Codex 命令：可配置 `hooks.codexChangelogCommand`，支持占位符
 - `{REPO_ROOT}` `{CHANGELOG}` `{COMMIT_MSG}` `{STAGED_DIFF}` `{STAGED_FILES}` `{SUBJECT}`

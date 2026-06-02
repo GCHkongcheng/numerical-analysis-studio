@@ -41,76 +41,108 @@ function parseStagedEntries(raw) {
     .filter((entry) => entry !== null);
 }
 
-function formatTimeInShanghai(now = new Date()) {
-  const formatted = new Intl.DateTimeFormat("sv-SE", {
-    timeZone: "Asia/Shanghai",
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(now);
-  return formatted.replace(",", "");
-}
-
-function reviewNotesFromFiles(files) {
-  const notes = [];
-  if (files.some((file) => file.startsWith("src/lib/"))) {
-    notes.push("涉及核心计算逻辑，建议运行 npm run test:math");
-  }
-  if (files.some((file) => file === "package.json" || file === "package-lock.json")) {
-    notes.push("依赖清单变更，建议执行 npm install 并验证 build");
-  }
-  if (files.some((file) => file.startsWith("src/app/") || file.startsWith("src/components/"))) {
-    notes.push("涉及前端交互，建议人工回归关键页面");
-  }
-  return notes;
-}
-
-function summarizeStatuses(entries) {
-  const counter = { A: 0, M: 0, D: 0, R: 0, C: 0 };
-  for (const entry of entries) {
-    const key = entry.status[0];
-    if (counter[key] !== undefined) {
-      counter[key] += 1;
-    }
-  }
-
-  const parts = [];
-  if (counter.A) parts.push(`新增 ${counter.A}`);
-  if (counter.M) parts.push(`修改 ${counter.M}`);
-  if (counter.D) parts.push(`删除 ${counter.D}`);
-  if (counter.R) parts.push(`重命名 ${counter.R}`);
-  if (counter.C) parts.push(`复制 ${counter.C}`);
-
-  return parts.length ? parts.join("，") : `变更 ${entries.length}`;
-}
-
 function ensureUnreleasedSection(changelog) {
   if (changelog.includes("## [Unreleased]")) return changelog;
   const base = changelog.trimEnd();
   return `${base}\n\n## [Unreleased]\n`;
 }
 
-function insertEntry(changelog, entry) {
+function normalizeSubject(subject) {
+  const normalized = subject.trim();
+  if (!normalized) return "";
+  if (/^\d+$/.test(normalized)) return "";
+  if (/^(wip|update|changes?|misc)$/i.test(normalized)) return "";
+  return normalized;
+}
+
+function classifyChange(entries, subject) {
+  const normalizedSubject = subject.toLowerCase();
+  if (/\b(fix|bugfix|repair)\b|修复|错误|缺陷/.test(normalizedSubject)) {
+    return "Fixed";
+  }
+  if (entries.every((entry) => entry.status[0] === "D")) {
+    return "Removed";
+  }
+  if (entries.some((entry) => entry.status[0] === "A")) {
+    return "Added";
+  }
+  return "Changed";
+}
+
+function describeHeuristicChange({ subject, entries, category }) {
+  const normalizedSubject = normalizeSubject(subject);
+  if (normalizedSubject) {
+    return normalizedSubject.replace(/[。.]$/, "");
+  }
+
+  const files = entries.map((entry) => entry.filePath);
+  const hasDocsArchive = entries.some(
+    (entry) =>
+      entry.status[0] === "R" &&
+      (entry.filePath.startsWith("docs/archive/") || entry.filePath.endsWith(".md"))
+  );
+  if (hasDocsArchive) {
+    return "归档开发过程文档，保持仓库根目录更清爽";
+  }
+
+  if (
+    files.some((file) =>
+      ["LICENSE", "README.md", "package.json", "package-lock.json"].includes(file)
+    ) ||
+    files.some((file) => file.startsWith("src/lib/site"))
+  ) {
+    return "完善开源项目元数据、仓库链接与文档说明";
+  }
+
+  if (files.some((file) => file.startsWith("scripts/") || file.startsWith(".githooks/"))) {
+    return "改进项目维护脚本与自动化流程";
+  }
+
+  if (files.some((file) => file.startsWith("tests/"))) {
+    return "补充或更新回归测试";
+  }
+
+  if (files.some((file) => file.startsWith("src/lib/"))) {
+    return "更新核心数值计算逻辑";
+  }
+
+  if (files.some((file) => file.startsWith("src/app/") || file.startsWith("src/components/"))) {
+    return "更新前端界面与交互体验";
+  }
+
+  if (category === "Added") return "新增项目文件或功能";
+  if (category === "Removed") return "移除不再需要的项目内容";
+  if (category === "Fixed") return "修复项目问题";
+  return "更新项目内容";
+}
+
+function insertEntry(changelog, category, entry) {
   const normalized = ensureUnreleasedSection(changelog).replace(/\r\n/g, "\n");
   const unreleasedPattern = /## \[Unreleased\][\s\S]*?(?=\n## \[|$)/;
   const match = normalized.match(unreleasedPattern);
 
   if (!match) {
-    return `${normalized.trimEnd()}\n\n## [Unreleased]\n\n### Commit Audit\n${entry}\n`;
+    return `${normalized.trimEnd()}\n\n## [Unreleased]\n\n### ${category}\n\n${entry}\n`;
   }
 
   const unreleasedBlock = match[0];
-  const marker = "### Commit Audit";
-  let nextBlock;
+  const sectionHeading = `### ${category}`;
+  const sectionPattern = new RegExp(
+    `### ${category}\\n[\\s\\S]*?(?=\\n### |$)`
+  );
+  let nextBlock = unreleasedBlock;
 
-  if (unreleasedBlock.includes(marker)) {
-    nextBlock = unreleasedBlock.replace(marker, `${marker}\n${entry}`);
+  if (unreleasedBlock.includes(entry)) {
+    return normalized;
+  }
+
+  if (unreleasedBlock.includes(sectionHeading)) {
+    nextBlock = unreleasedBlock.replace(sectionPattern, (section) => {
+      const trimmed = section.trimEnd();
+      return `${trimmed}\n${entry}\n`;
+    });
   } else {
-    nextBlock = `${unreleasedBlock.trimEnd()}\n\n${marker}\n${entry}`;
+    nextBlock = `${unreleasedBlock.trimEnd()}\n\n${sectionHeading}\n\n${entry}\n`;
   }
 
   return normalized.replace(unreleasedPattern, nextBlock);
@@ -151,28 +183,15 @@ function isChangelogTouched(repoRoot) {
 }
 
 function applyHeuristicUpdate({ repoRoot, changelogPath, subject, entries }) {
-  const changedFiles = entries.map((entry) => entry.filePath);
-  const notes = reviewNotesFromFiles(changedFiles);
-  const statusSummary = summarizeStatuses(entries);
-  const time = formatTimeInShanghai();
-
-  const entryLines = [
-    `- ${time} | 提交：${subject}`,
-    `  - 文件审查：${statusSummary}`,
-    `  - 变更范围：${changedFiles.map((file) => `\`${file}\``).join("、")}`,
-  ];
-
-  if (notes.length) {
-    entryLines.push(`  - 风险提示：${notes.join("；")}`);
-  }
-
-  const entry = entryLines.join("\n");
+  const category = classifyChange(entries, subject);
+  const summary = describeHeuristicChange({ subject, entries, category });
+  const entry = `- ${summary}。`;
 
   const initial = "# Changelog\n\n## [Unreleased]\n";
   const existing = existsSync(changelogPath)
     ? readFileSync(changelogPath, "utf8")
     : initial;
-  const updated = insertEntry(existing, entry).trimEnd() + "\n";
+  const updated = insertEntry(existing, category, entry).trimEnd() + "\n";
 
   writeFileSync(changelogPath, updated, "utf8");
   runGit(["add", "CHANGELOG.md"], { cwd: repoRoot });
@@ -191,7 +210,7 @@ function buildDefaultCodexPrompt({ commitSubject, changedFiles, stagedDiffPath, 
     "",
     `提交主题: ${commitSubject}`,
     `变更文件: ${changedFiles.join(", ")}`,
-    `CHANGLELOG 路径: ${changelogPath}`,
+    `CHANGELOG 路径: ${changelogPath}`,
     `已暂存 diff 文件: ${stagedDiffPath}`,
   ].join("\n");
 }
@@ -289,6 +308,10 @@ function main() {
   );
 
   if (!entries.length) return;
+
+  if (isChangelogTouched(repoRoot)) {
+    return;
+  }
 
   const requireCodex = ["1", "true", "yes"].includes(
     String(process.env.CHANGELOG_REQUIRE_CODEX ?? "").toLowerCase()
