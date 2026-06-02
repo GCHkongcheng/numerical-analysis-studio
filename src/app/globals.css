@@ -386,6 +386,15 @@ body {
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
   }
+
+  input.studio-input,
+  textarea.studio-input,
+  select.studio-select,
+  input.matrix-input,
+  .matrix-cell.matrix-input {
+    font-size: 16px;
+    line-height: 1.25;
+  }
 }
 
 /* 平板端优化 - 小平板 */
@@ -712,5 +721,4 @@ body.symbol-keyboard-open {
     font-size: 1rem;
   }
 }
-
 

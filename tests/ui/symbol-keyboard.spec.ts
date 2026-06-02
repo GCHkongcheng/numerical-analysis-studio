@@ -70,7 +70,33 @@ test("mobile math inputs use the custom keyboard instead of a virtual keyboard h
   await firstCell.click();
 
   await expect(firstCell).toHaveAttribute("inputmode", "none");
+  await expect(firstCell).toHaveCSS("font-size", "16px");
   await expect(page.locator(".symbol-keyboard-panel")).toBeVisible();
   await expect(page.locator("body")).toHaveClass(/symbol-keyboard-open/);
   await expect(firstCell).toBeFocused();
+});
+
+test("all keyboard tabs stretch their rows across the full panel", async ({ page }) => {
+  await page.goto("/");
+
+  const firstCell = page.locator(".matrix-input").first();
+  await firstCell.click();
+  await page.locator(".symbol-keyboard-fab").click();
+
+  const tabs = page.locator(".symbol-keyboard-tab");
+  const tabCount = await tabs.count();
+
+  for (let index = 0; index < tabCount; index += 1) {
+    await tabs.nth(index).click();
+    const widths = await page.evaluate(() => {
+      const panel = document.querySelector(".symbol-keyboard-panel");
+      const row = document.querySelector(".symbol-keyboard-row");
+      return {
+        panel: panel?.getBoundingClientRect().width ?? 0,
+        row: row?.getBoundingClientRect().width ?? 0,
+      };
+    });
+
+    expect(widths.row).toBeGreaterThan(widths.panel * 0.9);
+  }
 });

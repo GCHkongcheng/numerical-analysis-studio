@@ -573,6 +573,10 @@ function renderKeyIcon(key: SymbolKey) {
   return key.label;
 }
 
+function getRowColumnCount(row: SymbolKey[]): number {
+  return row.reduce((count, key) => count + (key.wide ? 2 : 1), 0);
+}
+
 export function SymbolKeyboard() {
   const context = useContext(MathInputContext);
   const [isOpen, setIsOpen] = useState(false);
@@ -686,7 +690,14 @@ export function SymbolKeyboard() {
 
           <div className="symbol-keyboard-rows" style={keyboardRowsStyle}>
             {KEYBOARD_LAYOUTS[activeGroup].map((row, rowIndex) => (
-              <div key={`${activeGroup}-${rowIndex}`} className="symbol-keyboard-row" style={keyboardRowStyle}>
+              <div
+                key={`${activeGroup}-${rowIndex}`}
+                className="symbol-keyboard-row"
+                style={{
+                  ...keyboardRowStyle,
+                  gridTemplateColumns: `repeat(${getRowColumnCount(row)}, minmax(2.2rem, 1fr))`,
+                }}
+              >
                 {row.map((key, keyIndex) => {
                   const isControl = key.action === "backspace" || key.action === "moveLeft" || key.action === "moveRight";
                   return (
