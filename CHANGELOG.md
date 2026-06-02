@@ -14,6 +14,10 @@
 - 文档弹窗从纯文本展示升级为 Markdown 渲染，支持标题、列表、表格等常见语法。
 
 ### Commit Audit
+- 2026-06-02 16:06:42 | 提交：1
+  - 文件审查：新增 1，修改 5
+  - 变更范围：`LICENSE`、`README.md`、`package-lock.json`、`package.json`、`src/app/about/page.tsx`、`src/lib/site.ts`
+  - 风险提示：涉及核心计算逻辑，建议运行 npm run test:math；依赖清单变更，建议执行 npm install 并验证 build；涉及前端交互，建议人工回归关键页面
 - 2026-06-02 13:56:48 | 提交：Hide FAB in mobile keyboard mode when open
   - 文件审查：修改 2
   - 变更范围：`src/components/common/SymbolKeyboard.tsx`、`tests/ui/symbol-keyboard.spec.ts`
