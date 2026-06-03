@@ -20,7 +20,7 @@ export function WorkbenchLayout({
 }: WorkbenchLayoutProps) {
   return (
     <MathInputProvider>
-      <div className="min-h-screen px-6 py-10 text-[15px] text-slate-900">
+      <div className="min-h-screen px-4 py-6 md:px-6 md:py-10 text-[15px] text-slate-900">
       {header}
 
       <div className="mx-auto mt-8 grid w-full max-w-[1540px] gap-6 lg:grid-cols-[320px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)]">
@@ -31,7 +31,7 @@ export function WorkbenchLayout({
       <ToastHost toasts={toasts} onDismiss={onDismissToast} />
       <SymbolKeyboard />
 
-      <footer className="mx-auto mt-10 w-full max-w-[1540px] rounded-3xl border border-slate-200 bg-white px-6 py-4 text-xs text-slate-500">
+      <footer className="mx-auto mt-10 w-full max-w-[1540px] rounded-3xl border border-border-soft bg-surface-strong px-6 py-4 text-xs text-text-muted">
         数值分析工作流 · 默认启用可验证计算
       </footer>
       </div>

@@ -191,26 +191,9 @@ export function DecompositionModule({
       <div className="workspace-grid">
         <section className="space-y-6">
           <div className="studio-card space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">矩阵分解</h2>
-              <div className="flex flex-wrap items-center gap-2 text-sm">
-                <label className="flex items-center gap-1">模式
-                  <select value={mode} onChange={(e) => handleModeChange(e.target.value as DecompositionMode)} className="studio-select">
-                    {DECOMPOSITION_OPTIONS.map((item) => (
-                      <option key={item.id} value={item.id}>{item.label}</option>
-                    ))}
-                  </select>
-                </label>
-                <label className="flex items-center gap-1">行数
-                  <select value={rows} onChange={(e) => handleRowsChange(Number(e.target.value))} className="studio-select">
-                    {sizeOptions.map((s) => <option key={`dr-${s}`} value={s}>{s}</option>)}
-                  </select>
-                </label>
-                <label className="flex items-center gap-1">列数
-                  <select value={cols} onChange={(e) => handleColsChange(Number(e.target.value))} className="studio-select">
-                    {sizeOptions.map((s) => <option key={`dc-${s}`} value={s}>{s}</option>)}
-                  </select>
-                </label>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">矩阵分解</h2>
                 <button
                   onClick={handleCompute}
                   className="studio-primary-btn"
@@ -218,6 +201,25 @@ export function DecompositionModule({
                 >
                   计算
                 </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
+                <label className="flex items-center gap-2">模式
+                  <select value={mode} onChange={(e) => handleModeChange(e.target.value as DecompositionMode)} className="studio-select">
+                    {DECOMPOSITION_OPTIONS.map((item) => (
+                      <option key={item.id} value={item.id}>{item.label}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">行数
+                  <select value={rows} onChange={(e) => handleRowsChange(Number(e.target.value))} className="studio-select">
+                    {sizeOptions.map((s) => <option key={`dr-${s}`} value={s}>{s}</option>)}
+                  </select>
+                </label>
+                <label className="flex items-center gap-2">列数
+                  <select value={cols} onChange={(e) => handleColsChange(Number(e.target.value))} className="studio-select">
+                    {sizeOptions.map((s) => <option key={`dc-${s}`} value={s}>{s}</option>)}
+                  </select>
+                </label>
               </div>
             </div>
             <MatrixGrid
@@ -244,77 +246,90 @@ export function DecompositionModule({
 
             {result?.mode === "lu" || result?.mode === "luPlain" ? (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   {result.mode === "lu" ? "LU 分解关系：P·A = L·U" : "普通 LU 分解关系：A = L·U"}
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">L（下三角矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">U（上三角矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
-                </div>
-                {result.mode === "lu" ? (
+                <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <div className="text-xs font-semibold tracking-wide text-slate-600">P（置换矩阵）</div>
-                    <MatrixGrid matrix={result.decomposition.P} displayMode={displayMode} />
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">L（下三角矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
                   </div>
-                ) : null}
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">U（上三角矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
+                  </div>
+                  {result.mode === "lu" ? (
+                    <div className="space-y-2 sm:col-span-2">
+                      <div className="text-xs font-semibold tracking-wide text-text-muted">P（置换矩阵）</div>
+                      <MatrixGrid matrix={result.decomposition.P} displayMode={displayMode} />
+                    </div>
+                  ) : null}
+                </div>
               </>
             ) : null}
 
             {result?.mode === "qr" ? (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   QR 分解关系：A = Q·R
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">Q（正交矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.Q} displayMode={displayMode} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">R（上三角矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.R} displayMode={displayMode} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">Q（正交矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.Q} displayMode={displayMode} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">R（上三角矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.R} displayMode={displayMode} />
+                  </div>
                 </div>
               </>
             ) : null}
 
             {result?.mode === "cholesky" ? (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   Cholesky 分解关系：A = L·L^T
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">L（下三角矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">L^T（L 的转置）</div>
-                  <MatrixGrid matrix={result.decomposition.Lt} displayMode={displayMode} />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">L（下三角矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">L^T（L 的转置）</div>
+                    <MatrixGrid matrix={result.decomposition.Lt} displayMode={displayMode} />
+                  </div>
                 </div>
               </>
             ) : null}
 
             {result?.mode === "svd" ? (
               <>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-700">
+                <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   SVD 分解关系：A = U·Σ·V^T
                 </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">U（左奇异向量）</div>
-                  <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">Σ（奇异值对角矩阵）</div>
-                  <MatrixGrid matrix={result.decomposition.Sigma} displayMode={displayMode} />
-                </div>
-                <div className="space-y-2">
-                  <div className="text-xs font-semibold tracking-wide text-slate-600">V^T（右奇异向量转置）</div>
-                  <MatrixGrid matrix={result.decomposition.Vt} displayMode={displayMode} />
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs font-mono text-slate-700">
-                  奇异值：[{result.decomposition.singularValues.join(", ")}]
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">U（左奇异向量）</div>
+                    <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">Σ（奇异值对角矩阵）</div>
+                    <MatrixGrid matrix={result.decomposition.Sigma} displayMode={displayMode} />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs font-semibold tracking-wide text-text-muted">V^T（右奇异向量转置）</div>
+                    <MatrixGrid matrix={result.decomposition.Vt} displayMode={displayMode} />
+                  </div>
+                  <div className="space-y-2 flex flex-col justify-between">
+                    <div className="space-y-2">
+                      <div className="text-xs font-semibold tracking-wide text-text-muted">奇异值</div>
+                      <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs font-mono text-slate-700">
+                        [{result.decomposition.singularValues.join(", ")}]
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </>
             ) : null}

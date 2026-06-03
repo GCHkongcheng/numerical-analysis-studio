@@ -48,18 +48,24 @@ export function WorkbenchHeader({
       <p className="max-w-3xl text-base text-slate-700">
         按数值分析学习路径组织功能：从数值线性代数出发，继续探索非线性方程、插值逼近、数值积分、常微分方程，以及误差与稳定性分析。
       </p>
-      <div className="flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white/80 p-2">
+      <div 
+        role="tablist"
+        aria-label="数值分析路径导航"
+        className="flex gap-2 overflow-x-auto rounded-2xl border border-border-soft bg-surface/90 p-2 sticky top-2 z-30 backdrop-blur-md shadow-sm"
+      >
         {navSections.map((section) => {
           const isActive = section.title === activeSectionTitle;
           return (
             <button
               key={section.title}
               type="button"
+              role="tab"
+              aria-selected={isActive}
               onClick={() => onSectionSwitch(section.title)}
-              className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition ${
+              className={`shrink-0 rounded-xl px-3 py-2 text-sm font-semibold transition-all duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)] active:scale-95 ${
                 isActive
-                  ? "bg-slate-900 text-white"
-                  : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
+                  ? "bg-accent text-white dark:text-slate-950 shadow-sm"
+                  : "text-text-muted hover:bg-surface-muted hover:text-foreground"
               }`}
             >
               {section.title}

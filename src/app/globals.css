@@ -31,7 +31,7 @@
   --color-primary-100: #ffedd5;
   --color-primary-200: #fed7aa;
   --color-primary-500: #ea580c;
-  --color-primary-600: #dc2626;
+  --color-primary-600: #d9480f;
   --color-primary-700: #c2410c;
   --color-primary-900: #7c2d12;
 
@@ -132,6 +132,14 @@ html[data-theme="dark"] {
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-accent: var(--accent);
+  --color-accent-glow: var(--accent-glow);
+  --color-grid-line: var(--grid-line);
+  --color-surface: var(--surface);
+  --color-surface-strong: var(--surface-strong);
+  --color-surface-muted: var(--surface-muted);
+  --color-border-soft: var(--border-soft);
+  --color-text-muted: var(--text-muted);
   --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "STSong", ui-serif, Georgia, serif;
   --font-mono: "JetBrains Mono", "Cascadia Mono", "Consolas", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -328,9 +336,9 @@ html[data-theme="dark"] .studio-primary-btn {
   gap: 0.9rem;
 }
 
-@container (min-width: 1180px) {
+@container (min-width: 860px) {
   .workspace-grid {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
   }
 }
 
@@ -1085,4 +1093,20 @@ body.symbol-keyboard-open {
     min-height: 3.3rem;
     font-size: 1rem;
   }
+}
+
+/* 自定义滚动条样式，替换 Windows 默认滚动条 */
+.matrix-scroll::-webkit-scrollbar,
+.symbol-keyboard-tabs::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+.matrix-scroll::-webkit-scrollbar-thumb,
+.symbol-keyboard-tabs::-webkit-scrollbar-thumb {
+  background: var(--border-soft);
+  border-radius: var(--radius-full);
+}
+.matrix-scroll::-webkit-scrollbar-track,
+.symbol-keyboard-tabs::-webkit-scrollbar-track {
+  background: transparent;
 }

@@ -285,10 +285,16 @@ export function MatrixOperationsModule({
                 className={
                   operations.feedback.tone === "error"
                     ? "rounded-xl border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700"
-                    : "rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-700"
+                    : "rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-sm font-mono text-slate-700"
                 }
               >
                 {operations.feedback.text}
+              </div>
+            ) : null}
+
+            {!operations.resultMatrix && (!operations.feedback || (operations.operation !== "rank" && operations.operation !== "determinant")) ? (
+              <div className="rounded-xl border border-dashed border-border-soft px-3 py-4 text-sm text-text-muted">
+                点击“计算”后，这里将显示运算结果矩阵或数值。
               </div>
             ) : null}
 

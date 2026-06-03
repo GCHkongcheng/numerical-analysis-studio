@@ -108,11 +108,16 @@ export function LinearSystemModule({
         <section className="space-y-6">
           {/* 增广矩阵输入和求解控制 */}
           <div className="studio-card space-y-4">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h2 className="text-lg font-semibold text-slate-900">
-                线性方程组
-              </h2>
-              <div className="flex flex-wrap items-center gap-3 text-sm">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-slate-900">
+                  线性方程组
+                </h2>
+                <button onClick={system.compute} className="studio-primary-btn">
+                  求解
+                </button>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-slate-700">
                 <label className="flex items-center gap-2">
                   方程数
                   <select
@@ -202,10 +207,6 @@ export function LinearSystemModule({
                     ) : null}
                   </>
                 ) : null}
-
-                <button onClick={system.compute} className="studio-primary-btn">
-                  求解
-                </button>
               </div>
             </div>
 
@@ -350,7 +351,11 @@ export function LinearSystemModule({
                   <CorrectnessPanel {...correctness} />
                 ) : null}
               </div>
-            ) : null}
+            ) : (
+              <div className="rounded-xl border border-dashed border-border-soft px-3 py-4 text-sm text-text-muted">
+                点击“求解”后，这里将显示方程组解的类型、秩信息与数值解。
+              </div>
+            )}
           </div>
         </aside>
       </div>
