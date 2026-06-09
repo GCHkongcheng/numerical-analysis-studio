@@ -56,7 +56,6 @@ export function MatrixGrid({
             ? 56
             : 52;
 
-  const rowCount = matrix.length;
   const showMathBrackets = !editable;
 
   return (
@@ -64,11 +63,8 @@ export function MatrixGrid({
       <div className={showMathBrackets ? "matrix-tex-wrap" : undefined}>
         <div className="matrix-scroll">
           <div
-            role="grid"
+            role="group"
             aria-label={editable ? "可编辑矩阵输入网格" : "矩阵显示网格"}
-            aria-rowcount={rowCount}
-            aria-colcount={colCount}
-            aria-readonly={!editable}
             className={`grid gap-2 ${useScrollLayout ? "matrix-grid-scroll" : "matrix-grid-fit"}`}
             style={{
               gridTemplateColumns: `repeat(${colCount}, minmax(${minCellWidth}px, 1fr))`,
@@ -96,9 +92,6 @@ export function MatrixGrid({
                   return (
                     <input
                       key={`${r}-${c}`}
-                      role="gridcell"
-                      aria-rowindex={r + 1}
-                      aria-colindex={c + 1}
                       aria-label={ariaLabel}
                       value={inputMatrix?.[r]?.[c] ?? "0"}
                       onChange={(event) => onChange?.(r, c, event.target.value)}
@@ -117,9 +110,6 @@ export function MatrixGrid({
                 return (
                   <div
                     key={`${r}-${c}`}
-                    role="gridcell"
-                    aria-rowindex={r + 1}
-                    aria-colindex={c + 1}
                     aria-label={ariaLabel}
                     className={cellClassName}
                   >

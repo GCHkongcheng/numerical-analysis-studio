@@ -6,4 +6,4 @@ export {
   perturbNumericVector,
   relativeMatrixErrorInfinity,
   relativeVectorErrorInfinity,
-} from "./matrix-core";
+} from "./matrix-error-core";

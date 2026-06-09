@@ -1,23 +1,35 @@
 export {
+  EPS,
+  cloneMatrix,
+  formatNumber,
+  formatNumberPrecise,
+  resizeInputMatrix,
+  toInputMatrix,
+  toPreciseInputMatrix,
+} from "./matrix-format";
+
+export {
+  isZeroExpr,
+  numericValue,
+  simplifyExpr,
+} from "./matrix-internals";
+
+export {
   addMatrices,
   applyPaste,
   buildAugmentedMatrix,
-  cloneMatrix,
   computeOperationResult,
   determinant,
-  formatNumber,
   formatValue,
   hasChinese,
   inverseMatrix,
   normalizeMatrixInput,
-  numericValue,
   parseMatrixText,
   rankMatrix,
-  resizeInputMatrix,
+  rrefMatrix,
   scalarMultiplyMatrix,
   splitAugmentedMatrix,
   subtractMatrices,
-  toInputMatrix,
   toNumericMatrix,
   transposeMatrix,
-} from "./matrix-core";
+} from "./matrix-basic-core";

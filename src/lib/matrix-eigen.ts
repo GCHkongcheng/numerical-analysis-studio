@@ -2,4 +2,4 @@ export {
   eigsWithMathjs,
   formatEigenComponent,
   relativeEigenError,
-} from "./matrix-core";
+} from "./matrix-eigen-core";

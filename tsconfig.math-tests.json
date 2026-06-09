@@ -21,6 +21,7 @@
     "src/types/matrix.ts",
     "src/types/nonlinear.ts",
     "src/types/ode.ts",
-    "scripts/test-math.ts"
+    "scripts/test-math.ts",
+    "scripts/math-tests/**/*.ts"
   ]
 }

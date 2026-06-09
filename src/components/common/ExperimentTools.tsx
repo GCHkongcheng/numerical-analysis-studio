@@ -1,8 +1,9 @@
 "use client";
 
-import { Database, FlaskConical, Save, ShieldCheck, Table2, Trash2 } from "lucide-react";
+import { Database, Download, FlaskConical, Save, ShieldCheck, Table2, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import type { MethodGuidanceItem } from "@/config/method-guidance";
 import { useExperimentLibraryStore } from "@/store/experiment-library";
 import type {
   ComparisonRow,
@@ -83,6 +84,31 @@ export function ReliabilityPanel({ items }: { items: ReliabilityItem[] }) {
               {item.label}
             </div>
             <div className="mt-1 text-xs leading-5">{item.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function MethodGuidancePanel({ items }: { items: MethodGuidanceItem[] }) {
+  if (!items.length) return null;
+
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-3">
+      <div className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        <ShieldCheck size={14} />
+        方法边界
+      </div>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div key={item.method} className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+            <div className="text-sm font-semibold text-slate-800">{item.method}</div>
+            <div className="mt-1 text-xs leading-5 text-slate-600">{item.applies}</div>
+            <div className="mt-2 grid gap-1 text-[11px] leading-4 text-slate-500">
+              <div>成本：{item.cost}</div>
+              <div>留意：{item.watch}</div>
+            </div>
           </div>
         ))}
       </div>
@@ -199,6 +225,40 @@ export function SaveExperimentButton({
     [experiments, module]
   );
 
+  const exportBaseName = sanitizeFileName(defaultName);
+  const exportPayload = {
+    name: defaultName,
+    module,
+    summary,
+    exportedAt: new Date().toISOString(),
+    payload,
+  };
+  const exportJson = () => {
+    downloadText(
+      `${exportBaseName}.json`,
+      JSON.stringify(exportPayload, null, 2),
+      "application/json"
+    );
+  };
+  const exportMarkdown = () => {
+    downloadText(
+      `${exportBaseName}.md`,
+      [
+        `# ${defaultName}`,
+        "",
+        `- 模块：${module}`,
+        `- 摘要：${summary}`,
+        `- 导出时间：${exportPayload.exportedAt}`,
+        "",
+        "```json",
+        JSON.stringify(payload, null, 2),
+        "```",
+        "",
+      ].join("\n"),
+      "text/markdown"
+    );
+  };
+
   return (
     <div className="rounded-2xl border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
@@ -225,6 +285,26 @@ export function SaveExperimentButton({
       <div className="mt-2 text-xs leading-5 text-slate-500">
         已保存 {moduleExperiments.length} 个本模块实验
         {savedName ? `，最近保存：${savedName}` : ""}
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={exportJson}
+          className="step-control justify-center disabled:opacity-50"
+        >
+          <Download size={14} />
+          JSON
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={exportMarkdown}
+          className="step-control justify-center disabled:opacity-50"
+        >
+          <Download size={14} />
+          Markdown
+        </button>
       </div>
       {moduleExperiments.length ? (
         <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
@@ -253,4 +333,19 @@ export function SaveExperimentButton({
       ) : null}
     </div>
   );
+}
+
+function sanitizeFileName(value: string): string {
+  const normalized = value.trim().replace(/[\\/:*?"<>|]+/g, "-");
+  return normalized || "numerical-experiment";
+}
+
+function downloadText(filename: string, content: string, type: string) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 }

@@ -5,4 +5,4 @@ export {
   solveLinearSystemIterative,
   solveLinearSystemWithSteps,
   solveNumericLinearSystem,
-} from "./matrix-core";
+} from "./matrix-linear-system-core";

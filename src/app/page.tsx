@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ExperimentCasePanel,
   MethodComparisonTable,
+  MethodGuidancePanel,
   ParameterScanTable,
   ReliabilityPanel,
   SaveExperimentButton,
@@ -35,6 +36,7 @@ import {
   MATRIX_EXPERIMENT_CASES,
   NAV_SECTIONS,
 } from "@/config/workbench";
+import { MATRIX_METHOD_GUIDANCE } from "@/config/method-guidance";
 import { useMatrix } from "@/hooks/useMatrix";
 import {
   useWorkbenchHistory,
@@ -1276,6 +1278,9 @@ export default function Home() {
                 {sidebarToolTab === "verify" ? (
                   <>
                     <ReliabilityPanel items={matrixReliabilityItems} />
+                    <MethodGuidancePanel
+                      items={MATRIX_METHOD_GUIDANCE[activeTab] ?? []}
+                    />
                     <DisplayModeSwitcher
                       displayMode={matrix.displayMode}
                       onChange={matrix.setDisplayMode}
@@ -1313,7 +1318,8 @@ export default function Home() {
                       disabled={
                         !activeCorrectnessDescriptor &&
                         matrixComparisonRows.length === 0 &&
-                        matrixScanRows.length === 0
+                        matrixScanRows.length === 0 &&
+                        !(activeTab === "operations" && matrix.operations.resultMatrix)
                       }
                     />
                     <div className="rounded-2xl border border-slate-200 bg-white p-3">

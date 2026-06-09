@@ -11,4 +11,4 @@ export {
   svdDecomposition,
   svdOrthogonalityResiduals,
   svdResidual,
-} from "./matrix-core";
+} from "./matrix-decomposition-core";

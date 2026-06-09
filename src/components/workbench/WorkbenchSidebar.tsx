@@ -40,8 +40,8 @@ export function WorkbenchSidebar({
 
       <aside
         className={`studio-card space-y-4 lg:sticky lg:top-6 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto lg:translate-x-0 ${
-          isOpen ? "translate-x-0" : "-translate-x-full"
-        } fixed inset-y-0 left-0 z-50 w-[min(88vw,320px)] overflow-y-auto rounded-none border-r border-slate-200 pb-6 pt-4 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] transform-gpu will-change-transform lg:static lg:w-auto lg:rounded-3xl lg:border lg:border-slate-200 lg:p-5 lg:shadow-none`}
+          isOpen ? "visible translate-x-0" : "invisible -translate-x-full"
+        } fixed inset-y-0 left-0 z-50 w-[min(88vw,320px)] overflow-y-auto rounded-none border-r border-slate-200 pb-6 pt-4 shadow-2xl transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] transform-gpu will-change-transform lg:visible lg:static lg:w-auto lg:rounded-3xl lg:border lg:border-slate-200 lg:p-5 lg:shadow-none`}
       >
         <div className="mb-1 flex items-center justify-between lg:hidden">
           <div className="text-sm font-semibold text-slate-700">导航菜单</div>

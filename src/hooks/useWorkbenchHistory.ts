@@ -41,6 +41,11 @@ type WorkbenchHistorySnapshot = {
   local: WorkbenchLocalHistorySnapshot;
 };
 
+type WorkbenchHistoryEntry = {
+  key: string;
+  snapshot: WorkbenchHistorySnapshot;
+};
+
 type UseWorkbenchHistoryOptions = {
   matrixSnapshot: MatrixHistorySnapshot;
   localSnapshot: WorkbenchLocalHistorySnapshot;
@@ -63,7 +68,7 @@ export function useWorkbenchHistory({
   restoreLocalSnapshot,
   limit = HISTORY_LIMIT,
 }: UseWorkbenchHistoryOptions) {
-  const historyStackRef = useRef<WorkbenchHistorySnapshot[]>([]);
+  const historyStackRef = useRef<WorkbenchHistoryEntry[]>([]);
   const historyIndexRef = useRef(-1);
   const historyApplyingRef = useRef(false);
   const [historyState, setHistoryState] = useState<HistoryState>({
@@ -92,6 +97,11 @@ export function useWorkbenchHistory({
     [localSnapshot, matrixSnapshot]
   );
 
+  const historySnapshotKey = useMemo(
+    () => JSON.stringify(historySnapshot),
+    [historySnapshot]
+  );
+
   const applyHistorySnapshot = useCallback(
     (snapshot: WorkbenchHistorySnapshot) => {
       historyApplyingRef.current = true;
@@ -104,7 +114,7 @@ export function useWorkbenchHistory({
   const undoHistory = useCallback(() => {
     if (historyIndexRef.current <= 0) return;
     historyIndexRef.current -= 1;
-    const target = historyStackRef.current[historyIndexRef.current];
+    const target = historyStackRef.current[historyIndexRef.current]?.snapshot;
     if (!target) return;
     applyHistorySnapshot(deepClone(target));
     syncHistoryState();
@@ -114,7 +124,7 @@ export function useWorkbenchHistory({
     const nextIndex = historyIndexRef.current + 1;
     if (nextIndex >= historyStackRef.current.length) return;
     historyIndexRef.current = nextIndex;
-    const target = historyStackRef.current[nextIndex];
+    const target = historyStackRef.current[nextIndex]?.snapshot;
     if (!target) return;
     applyHistorySnapshot(deepClone(target));
     syncHistoryState();
@@ -142,11 +152,12 @@ export function useWorkbenchHistory({
   }, [redoHistory, undoHistory]);
 
   useEffect(() => {
-    const nextSnapshot = deepClone(historySnapshot);
     const currentStack = historyStackRef.current;
 
     if (currentStack.length === 0) {
-      historyStackRef.current = [nextSnapshot];
+      historyStackRef.current = [
+        { key: historySnapshotKey, snapshot: deepClone(historySnapshot) },
+      ];
       historyIndexRef.current = 0;
       syncHistoryState();
       return;
@@ -159,13 +170,16 @@ export function useWorkbenchHistory({
     }
 
     const current = currentStack[historyIndexRef.current];
-    if (current && JSON.stringify(current) === JSON.stringify(nextSnapshot)) {
+    if (current?.key === historySnapshotKey) {
       syncHistoryState();
       return;
     }
 
     let nextStack = currentStack.slice(0, historyIndexRef.current + 1);
-    nextStack.push(nextSnapshot);
+    nextStack.push({
+      key: historySnapshotKey,
+      snapshot: deepClone(historySnapshot),
+    });
 
     if (nextStack.length > limit) {
       nextStack = nextStack.slice(nextStack.length - limit);
@@ -174,7 +188,7 @@ export function useWorkbenchHistory({
     historyStackRef.current = nextStack;
     historyIndexRef.current = nextStack.length - 1;
     syncHistoryState();
-  }, [historySnapshot, limit, syncHistoryState]);
+  }, [historySnapshot, historySnapshotKey, limit, syncHistoryState]);
 
   return {
     historyState,

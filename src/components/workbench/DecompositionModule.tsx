@@ -190,7 +190,7 @@ export function DecompositionModule({
     <div className="workspace-container">
       <div className="workspace-grid">
         <section className="space-y-6">
-          <div className="studio-card space-y-4">
+          <div className="studio-card decomposition-result-card space-y-4">
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <h2 className="text-lg font-semibold text-slate-900">矩阵分解</h2>
@@ -249,17 +249,17 @@ export function DecompositionModule({
                 <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   {result.mode === "lu" ? "LU 分解关系：P·A = L·U" : "普通 LU 分解关系：A = L·U"}
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="decomposition-result-grid">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">L（下三角矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">U（上三角矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
                   </div>
                   {result.mode === "lu" ? (
-                    <div className="space-y-2 sm:col-span-2">
+                    <div className="decomposition-result-wide min-w-0 space-y-2">
                       <div className="text-xs font-semibold tracking-wide text-text-muted">P（置换矩阵）</div>
                       <MatrixGrid matrix={result.decomposition.P} displayMode={displayMode} />
                     </div>
@@ -273,12 +273,12 @@ export function DecompositionModule({
                 <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   QR 分解关系：A = Q·R
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="decomposition-result-grid">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">Q（正交矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.Q} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">R（上三角矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.R} displayMode={displayMode} />
                   </div>
@@ -291,12 +291,12 @@ export function DecompositionModule({
                 <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   Cholesky 分解关系：A = L·L^T
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="decomposition-result-grid">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">L（下三角矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.L} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">L^T（L 的转置）</div>
                     <MatrixGrid matrix={result.decomposition.Lt} displayMode={displayMode} />
                   </div>
@@ -309,20 +309,20 @@ export function DecompositionModule({
                 <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs text-slate-700">
                   SVD 分解关系：A = U·Σ·V^T
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
+                <div className="decomposition-result-grid">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">U（左奇异向量）</div>
                     <MatrixGrid matrix={result.decomposition.U} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">Σ（奇异值对角矩阵）</div>
                     <MatrixGrid matrix={result.decomposition.Sigma} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2">
+                  <div className="min-w-0 space-y-2">
                     <div className="text-xs font-semibold tracking-wide text-text-muted">V^T（右奇异向量转置）</div>
                     <MatrixGrid matrix={result.decomposition.Vt} displayMode={displayMode} />
                   </div>
-                  <div className="space-y-2 flex flex-col justify-between">
+                  <div className="flex min-w-0 flex-col justify-between space-y-2">
                     <div className="space-y-2">
                       <div className="text-xs font-semibold tracking-wide text-text-muted">奇异值</div>
                       <div className="rounded-xl border border-border-soft bg-surface-muted px-3 py-2 text-xs font-mono text-slate-700">

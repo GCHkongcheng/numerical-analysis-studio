@@ -6,6 +6,7 @@ import {
   formatValue,
   hasChinese,
   normalizeMatrixInput,
+  rrefMatrix,
   splitAugmentedMatrix,
   toNumericMatrix,
 } from "@/lib/matrix-basic";
@@ -77,6 +78,8 @@ const DEFAULT_SYSTEM_AUGMENTED = toInputMatrix([
   [-2, 1, 2, -3],
 ]);
 
+const DEFAULT_OPERATION_RESULT = rrefMatrix(DEFAULT_MATRIX_A);
+
 export function useMatrix() {
   const sizeOptions = useMemo(() => [2, 3, 4, 5], []);
 
@@ -94,7 +97,9 @@ export function useMatrix() {
   const [opsBCols, setOpsBCols] = useState(3);
   const [opsOperation, setOpsOperation] = useState<MatrixOperation>("simplify");
   const [opsScalar, setOpsScalar] = useState("2");
-  const [opsResultMatrix, setOpsResultMatrix] = useState<string[][] | null>(null);
+  const [opsResultMatrix, setOpsResultMatrix] = useState<string[][] | null>(
+    DEFAULT_OPERATION_RESULT
+  );
   const [opsFeedback, setOpsFeedback] = useState<Feedback | null>(null);
 
   const [systemRows, setSystemRows] = useState(3);

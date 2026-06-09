@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { type ChangeEvent, useMemo, useRef, useState } from "react";
 
+import { getMatrixDimensionLimitMessage } from "@/config/matrix-limits";
 import type { MatrixKind, MatrixRecord } from "@/store/matrix-library";
 
 type MatrixShelfProps = {
@@ -30,10 +31,6 @@ type ParseResult =
   | { ok: true; data: string[][]; type: MatrixKind }
   | { ok: false; error: string };
 
-type BarcodeDetectorLike = {
-  detect: (image: ImageBitmap) => Promise<Array<{ rawValue?: string }>>;
-};
-
 const text = {
   shelf: "\u77e9\u9635\u5e93",
   countSuffix: "\u4e2a\u77e9\u9635",
@@ -49,8 +46,8 @@ const text = {
   augmented: "\u589e\u5e7f\u77e9\u9635",
   smart: "\u667a\u80fd\u8bc6\u522b",
   close: "\u5173\u95ed",
-  scan: "\u62cd\u7167\u626b\u7801",
-  scanning: "\u8bc6\u522b\u4e2d...",
+  scan: "拍照识别矩阵",
+  scanning: "图片识别中...",
   confirmPreview: "\u786e\u8ba4\u5e76\u751f\u6210\u53ef\u7f16\u8f91\u77e9\u9635",
   backInput: "\u8fd4\u56de\u8bc6\u522b",
   saveLibrary: "\u4fdd\u5b58\u5230\u77e9\u9635\u5e93",
@@ -59,7 +56,7 @@ const text = {
   matrixSize: "\u7ef4\u5ea6",
   inputPlaceholder: "1,1;2,2;3,3  \u6216  1,2|3;4,5|6",
   helper:
-    "\u8f93\u5165 1,1;2,2;3,3 \u6216\u4e0a\u4f20\u4e8c\u7ef4\u7801\uff0c\u786e\u8ba4\u540e\u53ef\u7ee7\u7eed\u7f16\u8f91\u77e9\u9635\u3002",
+    "输入 1,1;2,2;3,3，或拍摄清晰的数字矩阵图片；识别后可继续编辑矩阵。",
   errEmptyInput: "\u8bf7\u8f93\u5165\u77e9\u9635\u5185\u5bb9\u540e\u518d\u8bc6\u522b\u3002",
   errNoRows: "\u672a\u8bc6\u522b\u5230\u6709\u6548\u884c\uff0c\u8bf7\u68c0\u67e5\u8f93\u5165\u683c\u5f0f\u3002",
   errEmptyCell:
@@ -67,18 +64,19 @@ const text = {
   errNoCols: "\u672a\u8bc6\u522b\u5230\u5217\u6570\u636e\uff0c\u8bf7\u68c0\u67e5\u8f93\u5165\u3002",
   errUneven: "\u5404\u884c\u5217\u6570\u4e0d\u4e00\u81f4\uff0c\u65e0\u6cd5\u751f\u6210\u77e9\u9635\u3002",
   errAugCols: "\u589e\u5e7f\u77e9\u9635\u81f3\u5c11\u9700\u8981\u4e24\u5217\u3002",
-  errNoDetector: "\u5f53\u524d\u6d4f\u89c8\u5668\u6682\u4e0d\u652f\u6301\u626b\u7801\u8bc6\u522b\uff0c\u8bf7\u6539\u7528\u6587\u672c\u8f93\u5165\u3002",
-  errNoQr: "\u672a\u8bc6\u522b\u5230\u4e8c\u7ef4\u7801\u5185\u5bb9\uff0c\u8bf7\u91cd\u8bd5\u6216\u6539\u7528\u6587\u672c\u8f93\u5165\u3002",
-  errScanFail: "\u626b\u7801\u5931\u8d25\uff0c\u8bf7\u786e\u8ba4\u56fe\u7247\u6e05\u6670\u6216\u6539\u7528\u6587\u672c\u8f93\u5165\u3002",
+  errNoOcr: "图片中未识别到可解析的矩阵文本，请调整拍摄角度或改用文本输入。",
+  errScanFail: "图片识别失败，请确认图片清晰、背景干净，或改用文本输入。",
   errNoData: "\u77e9\u9635\u5185\u5bb9\u4e3a\u7a7a\uff0c\u65e0\u6cd5\u4fdd\u5b58\u3002",
 } as const;
 
 function splitRowCells(raw: string): string[] {
   const normalized = raw
     .trim()
+    .replace(/[()[\]{}]/g, " ")
     .replaceAll("\uFF0C", ",")
     .replaceAll("\uFF1B", ";")
-    .replaceAll("\uFF5C", "|");
+    .replaceAll("\uFF5C", "|")
+    .replace(/[−–—]/g, "-");
 
   if (!normalized) return [];
 
@@ -102,8 +100,30 @@ function splitRowCells(raw: string): string[] {
     .filter(Boolean);
 }
 
+function normalizeRecognizedMatrixText(raw: string): string {
+  return raw
+    .replace(/\r\n/g, "\n")
+    .replaceAll("\uFF0C", ",")
+    .replaceAll("\uFF1B", ";")
+    .replaceAll("\uFF5C", "|")
+    .replace(/[−–—]/g, "-")
+    .replace(/[“”]/g, "\"")
+    .replace(/[·•]/g, ".")
+    .split("\n")
+    .map((line) =>
+      line
+        .replace(/[()[\]{}]/g, " ")
+        .replace(/(?<=\d)[oO](?=\d)/g, "0")
+        .replace(/(?<=\d)[lI](?=\d)/g, "1")
+        .replace(/\s{2,}/g, " ")
+        .trim()
+    )
+    .filter(Boolean)
+    .join("\n");
+}
+
 function parseSmartMatrixText(textInput: string): ParseResult {
-  const cleaned = textInput.trim();
+  const cleaned = normalizeRecognizedMatrixText(textInput).trim();
   if (!cleaned) {
     return { ok: false, error: text.errEmptyInput };
   }
@@ -157,11 +177,94 @@ function parseSmartMatrixText(textInput: string): ParseResult {
     return { ok: false, error: text.errAugCols };
   }
 
+  const limitMessage = getMatrixDimensionLimitMessage(parsedRows, "识别矩阵");
+  if (limitMessage) {
+    return { ok: false, error: limitMessage };
+  }
+
   return {
     ok: true,
     data: parsedRows,
     type: sawAugmented ? "augmented" : "standard",
   };
+}
+
+async function imageFileToOcrDataUrl(file: File): Promise<string> {
+  const bitmap = await createImageBitmap(file);
+
+  try {
+    const maxDimension = 1800;
+    const scale = Math.min(
+      1,
+      maxDimension / Math.max(bitmap.width, bitmap.height)
+    );
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    if (!ctx) {
+      return await fileToDataUrl(file);
+    }
+
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    const image = ctx.getImageData(0, 0, width, height);
+    const data = image.data;
+
+    for (let index = 0; index < data.length; index += 4) {
+      const gray =
+        data[index] * 0.299 + data[index + 1] * 0.587 + data[index + 2] * 0.114;
+      const boosted = gray > 175 ? 255 : gray < 95 ? 0 : gray;
+      data[index] = boosted;
+      data[index + 1] = boosted;
+      data[index + 2] = boosted;
+    }
+
+    ctx.putImageData(image, 0, 0);
+    return canvas.toDataURL("image/png");
+  } finally {
+    bitmap.close();
+  }
+}
+
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        resolve(reader.result);
+        return;
+      }
+      reject(new Error("Unsupported image result"));
+    };
+    reader.onerror = () => reject(reader.error ?? new Error("Image read failed"));
+    reader.readAsDataURL(file);
+  });
+}
+
+async function recognizeMatrixTextFromImage(file: File): Promise<string> {
+  const [{ createWorker, PSM }, imageUrl] = await Promise.all([
+    import("tesseract.js"),
+    imageFileToOcrDataUrl(file),
+  ]);
+  const worker = await createWorker("eng", 1, {
+    logger: () => undefined,
+  });
+
+  try {
+    await worker.setParameters({
+      tessedit_char_whitelist: "0123456789.,;|/+-eE()[]{} \n\t",
+      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
+      preserve_interword_spaces: "1",
+    });
+
+    const result = await worker.recognize(imageUrl);
+    return normalizeRecognizedMatrixText(result.data.text);
+  } finally {
+    await worker.terminate();
+  }
 }
 
 function PreviewGrid({ item }: { item: MatrixRecord }) {
@@ -276,41 +379,22 @@ export function MatrixShelf({
     event.currentTarget.value = "";
     if (!file) return;
 
-    const Detector = (
-      window as unknown as {
-        BarcodeDetector?: new (options?: { formats?: string[] }) => BarcodeDetectorLike;
-      }
-    ).BarcodeDetector;
-
-    if (!Detector) {
-      setSmartError(text.errNoDetector);
-      return;
-    }
-
     setScanning(true);
     setSmartError(null);
 
-    let bitmap: ImageBitmap | null = null;
-
     try {
-      bitmap = await createImageBitmap(file);
-      const detector = new Detector({
-        formats: ["qr_code", "data_matrix", "aztec", "pdf417"],
-      });
-      const result = await detector.detect(bitmap);
-      const rawValue = result[0]?.rawValue?.trim();
+      const recognizedText = await recognizeMatrixTextFromImage(file);
 
-      if (!rawValue) {
-        setSmartError(text.errNoQr);
+      if (!recognizedText) {
+        setSmartError(text.errNoOcr);
         return;
       }
 
-      setSmartRawText(rawValue);
-      buildEditablePreview(rawValue);
+      setSmartRawText(recognizedText);
+      buildEditablePreview(recognizedText);
     } catch {
       setSmartError(text.errScanFail);
     } finally {
-      if (bitmap) bitmap.close();
       setScanning(false);
     }
   };

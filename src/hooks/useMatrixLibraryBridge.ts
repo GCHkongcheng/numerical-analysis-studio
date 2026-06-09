@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo } from "react";
 
+import { getMatrixDimensionLimitMessage } from "@/config/matrix-limits";
 import { resizeInputMatrix } from "@/lib/matrix-format";
 import {
   type ActiveContext,
@@ -155,6 +156,16 @@ export function useMatrixLibraryBridge({
 
   const loadMatrixToContext = useCallback(
     (matrixData: string[][], context: ActiveContext = activeLibraryContext) => {
+      const limitMessage = getMatrixDimensionLimitMessage(matrixData, "加载矩阵");
+      if (limitMessage) {
+        pushToast({
+          tone: "warning",
+          title: "矩阵尺寸过大",
+          message: limitMessage,
+        });
+        return;
+      }
+
       const copied = cloneMatrixValues(matrixData);
 
       if (context === "matrix-operations") {
@@ -215,6 +226,7 @@ export function useMatrixLibraryBridge({
       decompositionMode,
       loadMatrixToOperationsA,
       loadMatrixToOperationsB,
+      pushToast,
       resizeVectorB,
       setAugmentedMatrix,
       setDecompositionCols,
